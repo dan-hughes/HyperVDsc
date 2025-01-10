@@ -32,7 +32,7 @@ Invoke-TestSetup
 try
 {
     InModuleScope $script:dscResourceName {
-        Describe 'xVMHyper-V' {
+        Describe 'VMHyper-V' {
             $null = New-Item -Path 'TestDrive:\TestVM.vhdx' -ItemType File
             $null = New-Item -Path 'TestDrive:\TestVM.vhd' -ItemType File
 
@@ -84,6 +84,9 @@ try
                     $stubNIC1,
                     $stubNIC2
                 )
+                $stubVM.AutomaticStartAction = 'Nothing'
+                $stubVM.AutomaticStartDelay = 0
+                $stubVM.AutomaticStopAction = 'Save'
 
                 return $stubVM
             }
@@ -113,6 +116,9 @@ try
                     $stubNIC1,
                     $stubNIC2
                 )
+                $stubVM.AutomaticStartAction = 'Nothing'
+                $stubVM.AutomaticStartDelay = 0
+                $stubVM.AutomaticStopAction = 'Save'
 
                 return $stubVM
             }
@@ -142,6 +148,9 @@ try
                     $stubNIC1,
                     $stubNIC2
                 )
+                $stubVM.AutomaticStartAction = 'Nothing'
+                $stubVM.AutomaticStartDelay = 0
+                $stubVM.AutomaticStopAction = 'Save'
 
                 return $stubVM
             }
@@ -175,6 +184,9 @@ try
                     $stubNIC1,
                     $stubNIC2
                 )
+                $stubVM1.AutomaticStartAction = 'Nothing'
+                $stubVM1.AutomaticStartDelay = 0
+                $stubVM1.AutomaticStopAction = 'Save'
 
                 $stubVM2 = [Microsoft.HyperV.PowerShell.VirtualMachine]::CreateTypeInstance()
                 $stubVM2.Name = 'DuplicateVM'
@@ -200,6 +212,9 @@ try
                     $stubNIC1,
                     $stubNIC2
                 )
+                $stubVM2.AutomaticStartAction = 'Nothing'
+                $stubVM2.AutomaticStartDelay = 0
+                $stubVM2.AutomaticStopAction = 'Save'
 
                 return @(
                     $stubVM1,
@@ -231,6 +246,9 @@ try
                     $stubNIC1,
                     $stubNIC2
                 )
+                $stubVM.AutomaticStartAction = 'Nothing'
+                $stubVM.AutomaticStartDelay = 0
+                $stubVM.AutomaticStopAction = 'Save'
 
                 return $stubVM
             }
@@ -259,6 +277,9 @@ try
                     $stubNIC1,
                     $stubNIC2
                 )
+                $stubVM.AutomaticStartAction = 'Nothing'
+                $stubVM.AutomaticStartDelay = 0
+                $stubVM.AutomaticStopAction = 'Save'
 
                 return $stubVM
             }
@@ -288,6 +309,9 @@ try
                     $stubNIC1,
                     $stubNIC2
                 )
+                $stubVM.AutomaticStartAction = 'Nothing'
+                $stubVM.AutomaticStartDelay = 0
+                $stubVM.AutomaticStopAction = 'Save'
 
                 return $stubVM
             }
@@ -317,6 +341,9 @@ try
                     $stubNIC1,
                     $stubNIC2
                 )
+                $stubVM.AutomaticStartAction = 'Nothing'
+                $stubVM.AutomaticStartDelay = 0
+                $stubVM.AutomaticStopAction = 'Save'
 
                 return $stubVM
             }
@@ -345,6 +372,9 @@ try
                     $stubNIC1,
                     $stubNIC2
                 )
+                $stubVM.AutomaticStartAction = 'Nothing'
+                $stubVM.AutomaticStartDelay = 0
+                $stubVM.AutomaticStopAction = 'Save'
 
                 return $stubVM
             }
@@ -368,6 +398,7 @@ try
                 # Return snapshot hierarchy for .vhdxs
                 return @($stubVhdxDiskSnapshot.FullName, $stubVhdxDisk.Path)
             }
+
             Context 'Validates Get-TargetResource Method' {
 
                 It 'Returns a hashtable' {
@@ -398,6 +429,18 @@ try
                 It 'Hash table contains key AutomaticCheckpointEnabled' {
                     $targetResource = Get-TargetResource -Name 'VMWithAutomaticCheckpoints' -VhdPath $stubVhdxDisk.Path
                     $targetResource.ContainsKey('AutomaticCheckpointsEnabled') | Should -Be $true
+                }
+                It 'Hash table contains key AutomaticStartAction' {
+                    $targetResource = Get-TargetResource -Name 'Generation2VM' -VhdPath $stubVhdxDisk.Path
+                    $targetResource.ContainsKey('AutomaticStartAction') | Should -Be $true
+                }
+                It 'Hash table contains key AutomaticStartDelay' {
+                    $targetResource = Get-TargetResource -Name 'Generation2VM' -VhdPath $stubVhdxDisk.Path
+                    $targetResource.ContainsKey('AutomaticStartDelay') | Should -Be $true
+                }
+                It 'Hash table contains key AutomaticStopAction' {
+                    $targetResource = Get-TargetResource -Name 'Generation2VM' -VhdPath $stubVhdxDisk.Path
+                    $targetResource.ContainsKey('AutomaticStopAction') | Should -Be $true
                 }
                 It 'throws when Hyper-V Tools are not installed' {
                     # This test needs to be the last in the Context otherwise all subsequent Get-Module checks will fail
@@ -524,7 +567,7 @@ try
                 }
 
                 It 'Returns $true when EnableGuestService is off and "EnableGuestService" is not requested"' {
-                    Test-TargetResource -Name 'RunningVM'  @testParams | Should -Be $true
+                    Test-TargetResource -Name 'RunningVM' @testParams | Should -Be $true
                 }
 
                 Mock -CommandName Get-Command -ParameterFilter { $Name -eq 'Set-VM' -and $Module -eq 'Hyper-V' } -MockWith {
@@ -559,6 +602,36 @@ try
                 }
                 It 'Returns $false when AutomaticCheckpointsEnabled is on and requested "AutomaticCheckpointsEnabled" = "$false"' {
                     Test-TargetResource -Name 'VMWithAutomaticCheckpoints' -AutomaticCheckpointsEnabled $false @testParams | Should -Be $false
+                }
+
+                It 'Returns $true when AutomaticStartAction is "Nothing" and requested "AutomaticStartAction" is not requested' {
+                    Test-TargetResource -Name 'Generation2VM' @testParams | Should -Be $true
+                }
+                It 'Returns $false when AutomaticStartAction is "Start" and requested "AutomaticStartAction" = "Nothing"' {
+                    Test-TargetResource -Name 'Generation2VM' -AutomaticStartAction 'Start' @testParams | Should -Be $false
+                }
+                It 'Returns $true when AutomaticStartAction is "Nothing" and requested "AutomaticStartAction" = "Nothing"' {
+                    Test-TargetResource -Name 'Generation2VM' -AutomaticStartAction 'Nothing' @testParams | Should -Be $true
+                }
+
+                It 'Returns $true when AutomaticStartDelay is 0 and requested "AutomaticStartDelay" is not requested' {
+                    Test-TargetResource -Name 'Generation2VM' @testParams | Should -Be $true
+                }
+                It 'Returns $false when AutomaticStartDelay is "0" and requested "AutomaticStartDelay" = "5"' {
+                    Test-TargetResource -Name 'Generation2VM' -AutomaticStartDelay 5  @testParams | Should -Be $false
+                }
+                It 'Returns $true when AutomaticStartDelay is "0" and requested "AutomaticStartDelay" = "0"' {
+                    Test-TargetResource -Name 'Generation2VM' -AutomaticStartDelay 0 @testParams | Should -Be $true
+                }
+
+                It 'Returns $true when AutomaticStopAction is "Save" and requested "AutomaticStopAction" is not requested' {
+                    Test-TargetResource -Name 'Generation2VM' @testParams | Should -Be $true
+                }
+                It 'Returns $false when AutomaticStopAction is "Save" and requested "AutomaticStopAction" = "TurnOff"' {
+                    Test-TargetResource -Name 'Generation2VM' -AutomaticStopAction 'TurnOff' @testParams | Should -Be $false
+                }
+                It 'Returns $true when AutomaticStopAction is "Save" and requested "AutomaticStopAction" = "Save"' {
+                    Test-TargetResource -Name 'Generation2VM' -AutomaticStopAction 'Save' @testParams | Should -Be $true
                 }
 
                 It 'Returns $true when EnableGuestService is on and requested "EnableGuestService" = "$true"' {
@@ -611,7 +684,7 @@ try
                     Assert-MockCalled -CommandName Remove-VM -Scope It
                 }
 
-                It 'Creates and starts a VM VM with disabled dynamic memory that does not exist when "Ensure" = "Present" and "State" = "Running"' {
+                It 'Creates and starts a VM with disabled dynamic memory that does not exist when "Ensure" = "Present" and "State" = "Running"' {
                     Set-TargetResource -Name 'NewVM' -State Running @testParams
                     Assert-MockCalled -CommandName New-VM -Exactly -Times 1 -Scope It
                     Assert-MockCalled -CommandName Set-VM -Exactly -Times 1 -Scope It
@@ -857,7 +930,7 @@ try
                     Set-TargetResource -Name $VMName -AutomaticCheckpointsEnabled $SetAutomaticCheckpointsEnabled @testParams
                     Assert-MockCalled -CommandName Set-VM -ParameterFilter { $Name -eq $VMName -and $AutomaticCheckpointsEnabled -eq $SetAutomaticCheckpointsEnabled } -Exactly -Times $Times -Scope It
                 }
-                It 'Disables dynamic memory of RuningVM if only StartupMemory specified' {
+                It 'Disables dynamic memory of RunningVM if only StartupMemory specified' {
                     Mock -CommandName Set-VMProperty
                     Set-TargetResource -Name 'RunningVM' -StartupMemory 4GB @testParams
                     Assert-MockCalled -CommandName Set-VMProperty -ParameterFilter {
@@ -877,7 +950,7 @@ try
                     }  -Exactly -Times 1 -Scope It
                 }
 
-                It 'Enables dynamic memory of RuningVM if MinimumMemory is specified ' {
+                It 'Enables dynamic memory of RunningVM if MinimumMemory is specified ' {
                     Mock -CommandName Set-VMProperty
                     Set-TargetResource -Name 'RunningVM' -MinimumMemory 4GB @testParams
                     Assert-MockCalled -CommandName Set-VMProperty -ParameterFilter {
@@ -887,7 +960,7 @@ try
                     }  -Exactly -Times 1 -Scope It
                 }
 
-                It 'Enables dynamic memory of RuningVM if MaximumMemory is specified ' {
+                It 'Enables dynamic memory of RunningVM if MaximumMemory is specified ' {
                     Mock -CommandName Set-VMProperty
                     Set-TargetResource -Name 'RunningVM' -MaximumMemory 4GB @testParams
                     Assert-MockCalled -CommandName Set-VMProperty -ParameterFilter {
@@ -895,6 +968,56 @@ try
                         ($ChangeProperty.StaticMemory -eq $false) -and
                         ($ChangeProperty.DynamicMemory -eq $true)
                     }  -Exactly -Times 1 -Scope It
+                }
+
+                It 'Should not stop the VM to change the AutomaticStopAction property and RestartIfNeeded is not supplied' {
+                    Mock -CommandName Set-VMProperty
+                    Set-TargetResource -Name 'RunningVM' -AutomaticStopAction 'TurnOff' @testParams
+                    Assert-MockCalled -CommandName Set-VMProperty -ParameterFilter {
+                        $VMCommand -eq 'Set-VM' -and
+                        $ChangeProperty.AutomaticStopAction -eq 'TurnOff' -and
+                        $RestartIfNeeded -eq $false
+                    }  -Exactly -Times 1 -Scope It
+                }
+
+                It 'Should not stop the VM when the AutomaticStopAction property is correct' {
+                    Mock -CommandName Set-VMProperty
+                    Set-TargetResource -Name 'RunningVM' -AutomaticStopAction 'Save' @testParams -EnableGuestService $true
+                    Assert-MockCalled -CommandName Set-VMProperty -Exactly -Times 0 -Scope It
+                }
+
+                It 'Should stop the VM to change the AutomaticStopAction property and RestartIfNeeded is supplied' {
+                    Mock -CommandName Set-VMProperty
+                    Set-TargetResource -Name 'RunningVM' -AutomaticStopAction 'TurnOff' -RestartIfNeeded $true @testParams
+                    Assert-MockCalled -CommandName Set-VMProperty -ParameterFilter {
+                        $VMCommand -eq 'Set-VM' -and
+                        $ChangeProperty.AutomaticStopAction -eq 'TurnOff' -and
+                        $RestartIfNeeded -eq $true
+                    }  -Exactly -Times 1 -Scope It
+                }
+
+                It 'Should not update the VM when AutomaticStartAction property is correct' {
+                    Mock -CommandName Set-VM
+                    Set-TargetResource -Name 'RunningVM' -AutomaticStartAction 'Nothing' @testParams -EnableGuestService $true
+                    Assert-MockCalled -CommandName Set-VM -Exactly -Times 0 -Scope It
+                }
+
+                It 'Should update the VM when AutomaticStartAction property is not correct' {
+                    Mock -CommandName Set-VM
+                    Set-TargetResource -Name 'RunningVM' -AutomaticStartAction 'StartIfRunning' @testParams
+                    Assert-MockCalled -CommandName Set-VM -Exactly -Times 1 -Scope It
+                }
+
+                It 'Should not update the VM when AutomaticStartDelay property is correct' {
+                    Mock -CommandName Set-VM
+                    Set-TargetResource -Name 'RunningVM' -AutomaticStartDelay 0 @testParams
+                    Assert-MockCalled -CommandName Set-VM -Exactly -Times 0 -Scope It
+                }
+
+                It 'Should update the VM when AutomaticStartDelay property is not correct' {
+                    Mock -CommandName Set-VM
+                    Set-TargetResource -Name 'RunningVM' -AutomaticStartDelay 5 @testParams
+                    Assert-MockCalled -CommandName Set-VM -Exactly -Times 1 -Scope It
                 }
 
                 It 'throws when Hyper-V Tools are not installed' {

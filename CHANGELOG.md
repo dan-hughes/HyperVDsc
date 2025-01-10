@@ -7,6 +7,13 @@ For older change log history see the [historic changelog](HISTORIC_CHANGELOG.md)
 
 ## [Unreleased]
 
+### Added
+
+- `VMHyperV`
+  - Added parameters `AutomaticStartAction`, `AutomaticStartDelay`, `AutomaticStopAction` - Fixes [#216](https://github.com/dsccommunity/HyperVDsc/issues/216).
+
+### Changed
+
 - HyperVDsc
   - BREAKING CHANGE
     - Renamed _xHyper-V_ to _HyperVDsc - fixes [Issue #69](https://github.com/dsccommunity/HyperVDsc/issues/213).

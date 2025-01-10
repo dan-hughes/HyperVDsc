@@ -113,6 +113,9 @@ function Get-TargetResource
         NetworkAdapters             = $ipAddress
         EnableGuestService          = ($vmobj | Get-VMIntegrationService | Where-Object -FilterScript { $_.Id -eq $guestServiceId }).Enabled
         AutomaticCheckpointsEnabled = $vmobj.AutomaticCheckpointsEnabled
+        AutomaticStartAction        = $vmobj.AutomaticStartAction
+        AutomaticStartDelay         = $vmobj.AutomaticStartDelay
+        AutomaticStopAction         = $vmobj.AutomaticStopAction
     }
 }
 
@@ -214,7 +217,24 @@ function Set-TargetResource
         # Enable AutomaticCheckpoints
         [Parameter()]
         [System.Boolean]
-        $AutomaticCheckpointsEnabled
+        $AutomaticCheckpointsEnabled,
+
+        # Automatic Start Action
+        [Parameter()]
+        [ValidateSet('Start', 'StartIfRunning', 'Nothing')]
+        [System.String]
+        $AutomaticStartAction,
+
+        # Automatic Start Delay
+        [Parameter()]
+        [System.Int32]
+        $AutomaticStartDelay,
+
+        # Automatic Stop Action
+        [Parameter()]
+        [ValidateSet('Save', 'TurnOff', 'Shutdown')]
+        [System.String]
+        $AutomaticStopAction
     )
 
     # Check if Hyper-V module is present for Hyper-V cmdlets
@@ -307,6 +327,13 @@ function Set-TargetResource
             {
                 Write-Verbose -Message ($script:localizedData.VMPropertyShouldBe -f 'ProcessorCount', $ProcessorCount, $vmObj.ProcessorCount)
                 $changeProperty['ProcessorCount'] = $ProcessorCount
+            }
+
+            # If the VM does not have the right Automatic Stop Action, stop the VM, set the right Stop Action, start the VM
+            if ($PSBoundParameters.ContainsKey('AutomaticStopAction') -and ($vmObj.AutomaticStopAction -ne $AutomaticStopAction))
+            {
+                Write-Verbose -Message ($script:localizedData.VMPropertyShouldBe -f 'AutomaticStopAction', $AutomaticStopAction, $vmObj.AutomaticStopAction)
+                $changeProperty['AutomaticStopAction'] = $AutomaticStopAction
             }
 
             # Stop the VM, set the right properties, start the VM only if there are properties to change
@@ -458,7 +485,30 @@ function Set-TargetResource
             {
                 if ($vmObj.AutomaticCheckpointsEnabled -ne $AutomaticCheckpointsEnabled)
                 {
+                    Write-Verbose -Message ($script:localizedData.VMPropertySet -f 'EnableGuestService', $EnableGuestService)
                     Set-VM -Name $Name -AutomaticCheckpointsEnabled $AutomaticCheckpointsEnabled
+                }
+            }
+
+            # If AutomaticStartAction is set in configuration
+            if ($PSBoundParameters.ContainsKey('AutomaticStartAction'))
+            {
+                Write-Verbose -Message ($script:localizedData.VMPropertyShouldBe -f 'AutomaticStartAction', $AutomaticStartAction, $vmObj.AutomaticStartAction)
+                if ($vmObj.AutomaticStartAction -ne $AutomaticStartAction)
+                {
+                    Write-Verbose -Message ($script:localizedData.VMPropertySet -f 'AutomaticStartAction', $AutomaticStartAction)
+                    Set-VM -Name $Name -AutomaticStartAction $AutomaticStartAction
+                }
+            }
+
+            # If AutomaticStartDelay is set in configuration
+            if ($PSBoundParameters.ContainsKey('AutomaticStartDelay'))
+            {
+                Write-Verbose -Message ($script:localizedData.VMPropertyShouldBe -f 'AutomaticStartDelay', $AutomaticStartDelay, $vmObj.AutomaticStartDelay)
+                if ($vmObj.AutomaticStartDelay -ne $AutomaticStartDelay)
+                {
+                    Write-Verbose -Message ($script:localizedData.VMPropertySet -f 'AutomaticStartDelay', $AutomaticStartDelay)
+                    Set-VM -Name $Name -AutomaticStartDelay $AutomaticStartDelay
                 }
             }
         }
@@ -533,6 +583,21 @@ function Set-TargetResource
             if ($PSBoundParameters.ContainsKey('AutomaticCheckpointsEnabled'))
             {
                 $parameters['AutomaticCheckpointsEnabled'] = $AutomaticCheckpointsEnabled
+            }
+
+            if ($PSBoundParameters.ContainsKey('AutomaticStartAction'))
+            {
+                $parameters['AutomaticStartAction'] = $AutomaticStartAction
+            }
+
+            if ($PSBoundParameters.ContainsKey('AutomaticStartDelay'))
+            {
+                $parameters['AutomaticStartDelay'] = $AutomaticStartDelay
+            }
+
+            if ($PSBoundParameters.ContainsKey('AutomaticStopAction'))
+            {
+                $parameters['AutomaticStopAction'] = $AutomaticStopAction
             }
 
             $null = Set-VM @parameters
@@ -694,7 +759,24 @@ function Test-TargetResource
         # Enable AutomaticCheckpoints
         [Parameter()]
         [System.Boolean]
-        $AutomaticCheckpointsEnabled
+        $AutomaticCheckpointsEnabled,
+
+        # Automatic Start Action
+        [Parameter()]
+        [ValidateSet('Start', 'StartIfRunning', 'Nothing')]
+        [System.String]
+        $AutomaticStartAction,
+
+        # Automatic Start Delay
+        [Parameter()]
+        [System.Int32]
+        $AutomaticStartDelay,
+
+        # Automatic Stop Action
+        [Parameter()]
+        [ValidateSet('Save', 'TurnOff', 'Shutdown')]
+        [System.String]
+        $AutomaticStopAction
     )
 
     # Check if Hyper-V module is present for Hyper-V cmdlets
@@ -882,6 +964,24 @@ function Test-TargetResource
                     Write-Verbose -Message ($script:localizedData.VMPropertyShouldBe -f 'AutomaticCheckpointsEnabled', $AutomaticCheckpointsEnabled, $vmObj.AutomaticCheckpointsEnabled)
                     return $false
                 }
+            }
+
+            if ($PSBoundParameters.ContainsKey('AutomaticStartAction') -and ($vmObj.AutomaticStartAction -ne $AutomaticStartAction))
+            {
+                Write-Verbose -Message ($script:localizedData.VMPropertyShouldBe -f 'AutomaticStartAction', $AutomaticStartAction, $vmObj.AutomaticStartAction)
+                return $false
+            }
+
+            if ($PSBoundParameters.ContainsKey('AutomaticStartDelay') -and ($vmObj.AutomaticStartDelay -ne $AutomaticStartDelay))
+            {
+                Write-Verbose -Message ($script:localizedData.VMPropertyShouldBe -f 'AutomaticStartDelay', $AutomaticStartDelay, $vmObj.AutomaticStartDelay)
+                return $false
+            }
+
+            if ($PSBoundParameters.ContainsKey('AutomaticStopAction') -and ($vmObj.AutomaticStopAction -ne $AutomaticStopAction))
+            {
+                Write-Verbose -Message ($script:localizedData.VMPropertyShouldBe -f 'AutomaticStopAction', $AutomaticStopAction, $vmObj.AutomaticStopAction)
+                return $false
             }
 
             return $true
